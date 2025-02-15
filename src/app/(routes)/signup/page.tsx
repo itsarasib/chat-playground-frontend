@@ -1,5 +1,4 @@
 "use client";
-import { LoginModel, LoginSchema } from "@/schema/loginSchema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
@@ -16,10 +15,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+import { signupSchema, SignupModel } from "@/schema/signupSchema";
 
-const LoginPage = () => {
-  const form = useForm<LoginModel>({
-    resolver: zodResolver(LoginSchema),
+const SingupPage = () => {
+  const form = useForm<SignupModel>({
+    resolver: zodResolver(signupSchema),
     defaultValues: {
       email: "",
       password: "",
@@ -28,20 +28,20 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const onSubmit = async (data: LoginModel) => {
+  const onSubmit = async (data: SignupModel) => {
     setIsLoading(true);
     try {
       // Call login API
       console.log(data);
       toast({
-        title: "Login success",
-        description: "You have successfully logged in",
+        title: "Signup success",
+        description: "You have successfully signed in",
       });
     } catch (error) {
       console.error(error);
       toast({
-        title: "Login failed",
-        description: "Please check your email and password",
+        title: "Signup failed",
+        description: "Something went wrong",
         variant: "destructive",
       });
     } finally {
@@ -53,7 +53,7 @@ const LoginPage = () => {
     <div className="container mx-auto max-w-2xl h-[100vh] flex items-center justify-center">
       <Card className="w-full rounded-xl">
         <CardHeader>
-          <CardTitle>Login</CardTitle>
+          <CardTitle>Signup</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -102,10 +102,10 @@ const LoginPage = () => {
                 submit
               </Button>
               <p className="text-right mt-2">
-                dont have an account?
-                <Link href="/signup" className="text-blue-500">
+                already have an account?
+                <Link href="/login" className="text-blue-500">
                   {" "}
-                  signup{" "}
+                  login{" "}
                 </Link>
               </p>
             </form>
@@ -116,4 +116,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default SingupPage;
