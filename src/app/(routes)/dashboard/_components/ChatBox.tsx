@@ -3,10 +3,9 @@
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 
-import axios from "axios";
-
+import { Markdown } from "@/components/MarkDown";
 type Message = {
   role: "user" | "assistant" | "system";
   content: string;
@@ -39,7 +38,7 @@ const ChatBox: React.FC = () => {
     try {
       const response = await fetch(
         // "https://api.opentyphoon.ai/v1/chat/completions",
-        "http://127.0.0.1:8000/completions",
+        "https://1838-2405-9800-b861-c89-e0-edf7-56e4-44df.ngrok-free.app/completions",
         {
           method: "POST",
           body: JSON.stringify({
@@ -70,30 +69,28 @@ const ChatBox: React.FC = () => {
       while (true) {
         const { value, done } = await reader.read();
         if (done) {
-          setMessages((messages) => [
-            ...messages,
-            { role: "assistant", content: incomingMessage },
-          ]);
-          setLatestMessage(incomingMessage);
+          setLatestMessage("");
+          incomingMessage = "";
           break;
         }
 
         if (value) {
-          // the value will be in this format data: {value}, write a code to extract the value
-          // const [prefix, ...rest] = value.split(" ");
-          // const message = rest.join(" ");
-          const message = value.match(/data: (.*)/)?.[1];
-          console.log(message);
-          if (!message) {
-            setLatestMessage("");
-            setMessages((messages) => [
-              ...messages,
-              { role: "assistant", content: incomingMessage },
-            ]);
-            return;
-          }
-          incomingMessage += message;
-          setLatestMessage(incomingMessage);
+          const line = value.split("\n");
+          line.forEach((l) => {
+            if (l.startsWith("data:")) {
+              const message = l.match(/data: (.*)/)?.[1];
+              if (message === "DONE") {
+                setMessages((messages) => [
+                  ...messages,
+                  { role: "assistant", content: incomingMessage },
+                ]);
+                setLatestMessage(incomingMessage);
+                return;
+              }
+              incomingMessage += message;
+              setLatestMessage(incomingMessage);
+            }
+          });
         }
       }
     } catch (error) {
@@ -113,12 +110,12 @@ const ChatBox: React.FC = () => {
                 msg.role === "user" ? "text-blue-700" : "text-green-700"
               }`}
             >
-              <strong>{msg.role}:</strong> {msg.content}
+              <strong>{msg.role}:</strong> <Markdown content={msg.content} />
             </div>
           ))}
           {latestMessage && (
             <div className="text-gray-500">
-              <strong>assistant:</strong> {latestMessage}
+              <strong>assistant:</strong> <Markdown content={latestMessage} />
             </div>
           )}
         </div>
