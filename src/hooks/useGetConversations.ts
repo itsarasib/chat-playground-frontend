@@ -14,16 +14,13 @@ export const useGetConverstaion = () => {
     queryKey: ["conversations"],
     queryFn: async () => {
       try {
-        const response = await fetch(
-          "https://9742-2405-9800-b861-c89-e0-edf7-56e4-44df.ngrok-free.app/conversations",
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${access_token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        const response = await fetch("http://127.0.0.1:8000/conversations", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            "Content-Type": "application/json",
+          },
+        });
 
         const contentType = response.headers.get("content-type");
         if (!response.ok) {

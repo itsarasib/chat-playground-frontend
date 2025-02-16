@@ -12,7 +12,7 @@ const HistoryList: React.FC<HistoryListProps> = ({ conversations }) => {
       <ul className="p-4 space-y-2">
         {[...conversations].reverse().map((conv, index) => (
           <Link href={`/dashboard/${conv.conversationId}`} key={index}>
-            <li className="hover:bg-gray-700 p-2 cursor-pointer">
+            <li className="hover:bg-gray-700 p-2 cursor-pointer rounded-xl">
               {conv.title}
             </li>
           </Link>
