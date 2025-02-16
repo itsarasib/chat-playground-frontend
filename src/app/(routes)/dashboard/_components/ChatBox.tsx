@@ -7,6 +7,8 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Markdown } from "@/components/MarkDown";
 import { useToast } from "@/hooks/use-toast";
+import { useToken } from "@/hooks/useToken";
+import { ResponseAction } from "@/components/ReponseAction";
 
 type Message = {
   role: "user" | "assistant" | "system";
@@ -29,21 +31,25 @@ const ChatBox: React.FC = () => {
 
   const { toast } = useToast();
   const { uuid: conversationId } = useParams();
+  const {
+    token: { access_token },
+  } = useToken();
+  console.log(access_token);
 
   // Fetch messages when conversationId changes
   useEffect(() => {
     const fetchMessages = async () => {
-      const accessToken = localStorage.getItem("access_token");
       if (!conversationId) return;
 
       try {
         const response = await fetch(
-          `http://127.0.0.1:8000/conversations/${conversationId}`,
+          `https://9742-2405-9800-b861-c89-e0-edf7-56e4-44df.ngrok-free.app/conversations/${conversationId}`,
           {
             headers: {
-              Authorization: `Bearer ${accessToken}`,
+              Authorization: `Bearer ${access_token}`,
               "Content-Type": "application/json",
             },
+            method: "POST",
           }
         );
 
@@ -71,44 +77,38 @@ const ChatBox: React.FC = () => {
     };
 
     fetchMessages();
-  }, [conversationId, toast]);
+  }, [access_token, conversationId, toast]);
 
-  const sendMessage = async () => {
-    if (!input.trim()) return;
-
-    const userMessage: Message = { role: "user", content: input };
-    const updatedMessages = [...messages, userMessage];
-    setMessages(updatedMessages);
-    setInput("");
-
+  const sendMessage = async (message: Message[]) => {
     const systemMessage: Message = { role: "system", content: systemPrompt };
 
-    const accessToken = localStorage.getItem("access_token");
-
     try {
-      const response = await fetch("http://127.0.0.1:8000/completions", {
-        method: "POST",
-        body: JSON.stringify({
-          model,
-          messages: [systemMessage, ...updatedMessages],
-          maxTokens: 512,
-          temperature,
-          topP,
-          topK,
-          repetitionPenalty,
-          minP,
-          conversationId,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
+      const response = await fetch(
+        "https://9742-2405-9800-b861-c89-e0-edf7-56e4-44df.ngrok-free.app/completions",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            model,
+            messages: [systemMessage, ...message],
+            maxTokens: 512,
+            temperature,
+            topP,
+            topK,
+            repetitionPenalty,
+            minP,
+            conversationId,
+          }),
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${access_token}`,
+          },
+        }
+      );
 
       if (!response.body) return;
 
       const reader = response.body
-        ?.pipeThrough(new TextDecoderStream())
+        .pipeThrough(new TextDecoderStream())
         .getReader();
 
       let incomingMessage = "";
@@ -135,6 +135,14 @@ const ChatBox: React.FC = () => {
               }
               incomingMessage += message;
               setLatestMessage(incomingMessage);
+            } else {
+              if (!!l) {
+                incomingMessage += "\n" + l;
+                setLatestMessage(incomingMessage);
+              } else {
+                incomingMessage += "\n";
+                setLatestMessage(incomingMessage);
+              }
             }
           });
         }
@@ -147,6 +155,28 @@ const ChatBox: React.FC = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const onGenerate = async () => {
+    if (!input.trim()) return;
+
+    const userMessage: Message = { role: "user", content: input };
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
+    setInput("");
+
+    await sendMessage(updatedMessages);
+  };
+
+  const onRegenerate = async () => {
+    // Clear latest message
+    let temp;
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage.role === "assistant") {
+      temp = messages.slice(0, -1);
+    }
+    setMessages(temp || []);
+    await sendMessage(temp || []);
   };
 
   return (
@@ -162,6 +192,12 @@ const ChatBox: React.FC = () => {
               }`}
             >
               <strong>{msg.role}:</strong> <Markdown content={msg.content} />
+              {index === messages.length - 1 && msg.role === "assistant" && (
+                <ResponseAction
+                  messageId={`${index}`}
+                  onRegenrate={onRegenerate}
+                />
+              )}
             </div>
           ))}
           {latestMessage && (
@@ -179,10 +215,10 @@ const ChatBox: React.FC = () => {
             placeholder="Type a message"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+            onKeyDown={(e) => e.key === "Enter" && onGenerate()}
           />
           <Button
-            onClick={sendMessage}
+            onClick={onGenerate}
             className="px-4 py-5 text-black font-bold rounded-full bg-transparent hover:bg-transparent hover:text-violet-700 hover:border-violet-700 border-2 border-black"
           >
             Send

@@ -7,6 +7,7 @@ import { BiHide } from "react-icons/bi";
 import HistoryList from "../_components/HistoryList";
 import { v4 as uuidv4 } from "uuid";
 import { useRouter } from "next/navigation";
+import { useToken } from "@/hooks/useToken";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -23,44 +24,23 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const router = useRouter();
-
-  // useEffect(() => {
-  //   const fetchConversations = async () => {
-  //     const accessToken = localStorage.getItem("access_token");
-  //     try {
-  //       const response = await fetch(
-  //         "https://1838-2405-9800-b861-c89-e0-edf7-56e4-44df.ngrok-free.app/conversations",
-  //         {
-  //           method: "GET",
-  //           headers: {
-  //             Authorization: `Bearer ${accessToken}`,
-  //             "Content-Type": "application/json",
-  //           },
-  //         }
-  //       );
-  //       if (!response.ok) {
-  //         throw new Error("Failed to fetch conversations");
-  //       }
-  //       const data: Conversation[] = await response.json();
-  //       setConversations(data);
-  //     } catch (error) {
-  //       console.error("Error fetching conversations:", error);
-  //     }
-  //   };
-  //   fetchConversations();
-  // }, []);
+  const {
+    token: { access_token },
+  } = useToken();
 
   useEffect(() => {
     const fetchConversations = async () => {
-      const accessToken = localStorage.getItem("access_token");
       try {
-        const response = await fetch("http://127.0.0.1:8000/conversations", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-        });
+        const response = await fetch(
+          "https://9742-2405-9800-b861-c89-e0-edf7-56e4-44df.ngrok-free.app/conversations",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
         const contentType = response.headers.get("content-type");
         if (!response.ok) {
@@ -95,7 +75,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex min-h-screen">
       {/* Sidebar */}
       <div
         className={`bg-gray-900 text-white transition-all duration-300 ${

@@ -19,6 +19,7 @@ import Link from "next/link";
 import axiosInstance from "@/hooks/axios";
 import { useRouter } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
+import { useToken } from "@/hooks/useToken";
 
 const LoginPage = () => {
   const form = useForm<LoginModel>({
@@ -32,6 +33,7 @@ const LoginPage = () => {
   const { toast } = useToast();
   const router = useRouter();
   const conversationId = uuidv4();
+  const { setToken } = useToken();
 
   const onSubmit = async (data: LoginModel) => {
     setIsLoading(true);
@@ -39,9 +41,9 @@ const LoginPage = () => {
       const response = await axiosInstance.post("/auth/login", data);
       console.log(response);
       const result = response.data;
-      localStorage.setItem("access_token", result.access_token);
-      localStorage.setItem("refresh_token", result.refresh_token);
-      console.log(data);
+      setToken({
+        access_token: result.access_token,
+      });
       toast({
         title: "Login success",
         description: "You have successfully logged in",
