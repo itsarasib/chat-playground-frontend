@@ -18,7 +18,7 @@ type UserMessage = {
 type AssistantMessage = {
   role: "assistant";
   content: string;
-  id: string;
+  messageId: string;
   tokenCount: number;
 };
 
@@ -122,7 +122,7 @@ const ChatBox: React.FC = () => {
       let incomingMessage = {
         role: "assistant" as const,
         content: "",
-        id: "",
+        messageId: "",
         tokenCount: 0,
       };
       while (true) {
@@ -137,7 +137,7 @@ const ChatBox: React.FC = () => {
           incomingMessage = {
             role: "assistant",
             content: "",
-            id: "",
+            messageId: "",
             tokenCount: 0,
           };
           break;
@@ -149,7 +149,7 @@ const ChatBox: React.FC = () => {
             if (l.startsWith("id: ")) {
               const id = l.match(/id: (.*)/)?.[1];
               if (!id) return;
-              incomingMessage.id = id;
+              incomingMessage.messageId = id;
               // setLatestMessage((prev) => ({ ...prev, id }));
             } else if (l.startsWith("data:")) {
               const message = l.match(/data: (.*)/)?.[1];
@@ -218,7 +218,7 @@ const ChatBox: React.FC = () => {
               <strong>{msg.role}:</strong> <Markdown content={msg.content} />
               {index === messages.length - 1 && msg.role === "assistant" && (
                 <ResponseAction
-                  messageId={`${index}`}
+                  messageId={msg.messageId}
                   onRegenrate={onRegenerate}
                 />
               )}
