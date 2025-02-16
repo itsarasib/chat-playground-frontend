@@ -7,7 +7,8 @@ import { BiHide } from "react-icons/bi";
 import HistoryList from "../_components/HistoryList";
 import { v4 as uuidv4 } from "uuid";
 import { useRouter } from "next/navigation";
-import { useToken } from "@/hooks/useToken";
+import { useGetConverstaion } from "@/hooks/useGetConversations";
+import { Spinner } from "@/components/ui/Spinner";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -25,46 +26,28 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const router = useRouter();
   const {
-    token: { access_token },
-  } = useToken();
+    conversations: conversationResponse,
+    isLoading,
+    isError,
+  } = useGetConverstaion();
 
   useEffect(() => {
-    const fetchConversations = async () => {
-      try {
-        const response = await fetch(
-          "https://9742-2405-9800-b861-c89-e0-edf7-56e4-44df.ngrok-free.app/conversations",
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${access_token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+    if (conversationResponse) {
+      setConversations(conversationResponse);
+    }
+  }, [conversationResponse]);
 
-        const contentType = response.headers.get("content-type");
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(
-            `Failed to fetch: ${response.status}, Response: ${errorText}`
-          );
-        }
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Spinner className="w-12 h-12" />
+      </div>
+    );
+  }
 
-        if (contentType && contentType.includes("application/json")) {
-          const data: Conversation[] = await response.json();
-          setConversations(data);
-        } else {
-          const text = await response.text();
-          console.error("Non-JSON response:", text);
-          throw new Error("Received non-JSON response from server");
-        }
-      } catch (error) {
-        console.error("Error fetching conversations:", error);
-      }
-    };
-
-    fetchConversations();
-  }, []);
+  if (isError) {
+    return <div>Error fetching conversations</div>;
+  }
 
   const handleClick = () => {
     router.push(`/dashboard/${uuidv4()}`);
