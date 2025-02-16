@@ -1,12 +1,22 @@
 import React from "react";
+import { Conversation } from "../[uuid]/layout";
+import Link from "next/link";
 
-const HistoryList = () => {
+interface HistoryListProps {
+  conversations: Conversation[];
+}
+
+const HistoryList: React.FC<HistoryListProps> = ({ conversations }) => {
   return (
     <div>
       <ul className="p-4 space-y-2">
-        <li className="hover:bg-gray-700 p-2 cursor-pointer">Home</li>
-        <li className="hover:bg-gray-700 p-2 cursor-pointer">Profile</li>
-        <li className="hover:bg-gray-700 p-2 cursor-pointer">Settings</li>
+        {[...conversations].reverse().map((conv, index) => (
+          <Link href={`/dashboard/${conv.conversationId}`} key={index}>
+            <li className="hover:bg-gray-700 p-2 cursor-pointer">
+              {conv.title}
+            </li>
+          </Link>
+        ))}
       </ul>
     </div>
   );
