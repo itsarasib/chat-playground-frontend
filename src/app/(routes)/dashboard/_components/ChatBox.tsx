@@ -3,9 +3,11 @@
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { v4 as uuidv4 } from "uuid";
 
 import { Markdown } from "@/components/MarkDown";
+import { useToast } from "@/hooks/use-toast";
 type Message = {
   role: "user" | "assistant" | "system";
   content: string;
@@ -24,6 +26,11 @@ const ChatBox: React.FC = () => {
   const [repetitionPenalty, setRepetitionPenalty] = useState(1.05);
   const [minP, setMinP] = useState(0);
   const [latestMessage, setLatestMessage] = useState<string>("");
+  const { toast } = useToast();
+
+  useEffect(() => {
+    console.log(messages);
+  }, [messages]);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -34,6 +41,8 @@ const ChatBox: React.FC = () => {
     setInput("");
 
     const systemMessage: Message = { role: "system", content: systemPrompt };
+    const conversationId = uuidv4();
+    const accessToken = localStorage.getItem("access_token");
 
     try {
       const response = await fetch(
@@ -45,16 +54,16 @@ const ChatBox: React.FC = () => {
             model,
             messages: [systemMessage, ...updatedMessages],
             maxTokens: 512,
-            temperature: 0.7,
-            topP: 0.95,
-            topK: 1,
-            repetitionPenalty: 1.05,
-            minP: 0,
+            temperature,
+            topP,
+            topK,
+            repetitionPenalty,
+            minP,
+            conversationId,
           }),
           headers: {
             "Content-Type": "application/json",
-            Authorization:
-              "Bearer sk-7rPYeT7qkoxvym07ebt9Kk8SVdz9rf5dv8jFM605Lqbf4aeh",
+            Authorization: `Bearer ${accessToken}`,
           },
         }
       );
@@ -75,7 +84,9 @@ const ChatBox: React.FC = () => {
         }
 
         if (value) {
-          const line = value.split("\n");
+          console.log(value);
+          const line = value.split("\n").slice(0, -1);
+          console.log(line);
           line.forEach((l) => {
             if (l.startsWith("data:")) {
               const message = l.match(/data: (.*)/)?.[1];
@@ -89,12 +100,25 @@ const ChatBox: React.FC = () => {
               }
               incomingMessage += message;
               setLatestMessage(incomingMessage);
+            } else {
+              if (!!l) {
+                incomingMessage += "\n" + l;
+                setLatestMessage(incomingMessage);
+              } else {
+                incomingMessage += "\n";
+                setLatestMessage(incomingMessage);
+              }
             }
           });
         }
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      toast({
+        title: "Failed to send message",
+        description: "Please try again",
+        variant: "destructive",
+      });
     }
   };
 
@@ -152,8 +176,17 @@ const ChatBox: React.FC = () => {
             <option value="typhoon-v2-8b-instruct">
               typhoon-v2-8b-instruct
             </option>
-            <option value="typhoon-v2-7b-instruct">
-              typhoon-v2-7b-instruct
+            <option value="typhoon-v2-70b-instruct">
+              typhoon-v2-70b-instruct
+            </option>
+            <option value="typhoon-v2-r1-70b-preview">
+              typhoon-v2-r1-70b-preview
+            </option>
+            <option value="typhoon-v1.5-instruct">
+              typhoon-v2-70b-instruct
+            </option>
+            <option value="typhoon-v2-70b-instruct">
+              typhoon-v2-70b-instruct
             </option>
           </select>
         </div>

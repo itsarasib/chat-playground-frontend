@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import React, { useState } from "react";
 import { BiHide } from "react-icons/bi";
-import HistoryList from "./_components/HistoryList";
+import HistoryList from "../_components/HistoryList";
+import { v4 as uuidv4 } from "uuid";
+import { useRouter } from "next/navigation";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -12,6 +14,11 @@ interface DashboardLayoutProps {
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+  const router = useRouter();
+
+  const handleClick = () => {
+    router.push(`/dashboard/${uuidv4()}`);
+  };
 
   const toggleSidebar = () => {
     setIsSidebarVisible((prev) => !prev);
@@ -41,6 +48,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           )}
         </div>
 
+        <Button onClick={handleClick}>New chat</Button>
         {/* Sidebar History*/}
         <HistoryList />
       </div>

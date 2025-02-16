@@ -1,7 +1,7 @@
 import ReactMarkdown, { type Components } from "react-markdown";
-import SyntaxHighlighter from "react-syntax-highlighter";
-import { dark } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import remarkGfm from "remark-gfm";
+import { CodeMarkDown } from "./CodeMarkDown";
+import { memo } from "react";
 
 interface Props {
   content: string;
@@ -9,21 +9,7 @@ interface Props {
 
 const component: Components = {
   // @ts-expect-error: inline
-  code({ node, inline, className, children, ref, style, ...props }) {
-    const match = /language-(\w+)/.exec(className || "");
-    return !inline && match ? (
-      <SyntaxHighlighter
-        style={dark}
-        language={match[1]}
-        PreTag="div"
-        {...props}
-      >
-        {String(children).replace(/\n$/, "")}
-      </SyntaxHighlighter>
-    ) : (
-      <code className={className} {...props} />
-    );
-  },
+  code: CodeMarkDown,
   pre({ children }) {
     return <div>{children}</div>;
   },
@@ -66,10 +52,15 @@ const component: Components = {
   },
 };
 
-export const Markdown: React.FC<Props> = ({ content }) => {
+const MarkdownComponent: React.FC<Props> = ({ content }) => {
+  // console.log(content);
   return (
     <ReactMarkdown remarkPlugins={[remarkGfm]} components={component}>
       {content}
     </ReactMarkdown>
   );
 };
+
+export const Markdown = memo(MarkdownComponent, (prev, next) => {
+  return prev.content === next.content;
+});

@@ -16,6 +16,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+import axiosInstance from "@/hooks/axios";
+import { useRouter } from "next/navigation";
+import { v4 as uuidv4 } from "uuid";
 
 const LoginPage = () => {
   const form = useForm<LoginModel>({
@@ -27,16 +30,23 @@ const LoginPage = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
+  const conversationId = uuidv4();
 
   const onSubmit = async (data: LoginModel) => {
     setIsLoading(true);
     try {
-      // Call login API
+      const response = await axiosInstance.post("/auth/login", data);
+      console.log(response);
+      const result = response.data;
+      localStorage.setItem("access_token", result.access_token);
+      localStorage.setItem("refresh_token", result.refresh_token);
       console.log(data);
       toast({
         title: "Login success",
         description: "You have successfully logged in",
       });
+      router.push(`/dashboard/${conversationId}`);
     } catch (error) {
       console.error(error);
       toast({

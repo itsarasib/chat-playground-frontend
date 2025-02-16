@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { signupSchema, SignupModel } from "@/schema/signupSchema";
+import axiosInstance from "@/hooks/axios";
+import { useRouter } from "next/navigation";
 
 const SingupPage = () => {
   const form = useForm<SignupModel>({
@@ -27,16 +29,19 @@ const SingupPage = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const onSubmit = async (data: SignupModel) => {
     setIsLoading(true);
     try {
-      // Call login API
+      const response = await axiosInstance.post("/auth/register", data);
       console.log(data);
+      console.log(response);
       toast({
         title: "Signup success",
         description: "You have successfully signed in",
       });
+      router.push("/login");
     } catch (error) {
       console.error(error);
       toast({
