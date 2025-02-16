@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import React, { useEffect, useState } from "react";
-import { v4 as uuidv4 } from "uuid";
-
+import { useParams } from "next/navigation";
 import { Markdown } from "@/components/MarkDown";
 import { useToast } from "@/hooks/use-toast";
+
 type Message = {
   role: "user" | "assistant" | "system";
   content: string;
@@ -26,11 +26,52 @@ const ChatBox: React.FC = () => {
   const [repetitionPenalty, setRepetitionPenalty] = useState(1.05);
   const [minP, setMinP] = useState(0);
   const [latestMessage, setLatestMessage] = useState<string>("");
-  const { toast } = useToast();
 
+  const { toast } = useToast();
+  const { uuid: conversationId } = useParams();
+
+  // Fetch messages when conversationId changes
   useEffect(() => {
-    console.log(messages);
-  }, [messages]);
+    const fetchMessages = async () => {
+      const accessToken = localStorage.getItem("access_token");
+      if (!conversationId) return;
+
+      try {
+        const response = await fetch(
+          `http://127.0.0.1:8000/conversations/${conversationId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (response.status === 404) {
+          // Handle case where conversation does not exist yet (new chat)
+          console.log("New conversation, so there is no message yet");
+          setMessages([]);
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch messages: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setMessages(data);
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+        toast({
+          title: "Failed to load messages",
+          description: "Please try again later",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchMessages();
+  }, [conversationId, toast]);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -41,32 +82,28 @@ const ChatBox: React.FC = () => {
     setInput("");
 
     const systemMessage: Message = { role: "system", content: systemPrompt };
-    const conversationId = uuidv4();
+
     const accessToken = localStorage.getItem("access_token");
 
     try {
-      const response = await fetch(
-        // "https://api.opentyphoon.ai/v1/chat/completions",
-        "https://1838-2405-9800-b861-c89-e0-edf7-56e4-44df.ngrok-free.app/completions",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            model,
-            messages: [systemMessage, ...updatedMessages],
-            maxTokens: 512,
-            temperature,
-            topP,
-            topK,
-            repetitionPenalty,
-            minP,
-            conversationId,
-          }),
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
+      const response = await fetch("http://127.0.0.1:8000/completions", {
+        method: "POST",
+        body: JSON.stringify({
+          model,
+          messages: [systemMessage, ...updatedMessages],
+          maxTokens: 512,
+          temperature,
+          topP,
+          topK,
+          repetitionPenalty,
+          minP,
+          conversationId,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
 
       if (!response.body) return;
 
@@ -84,9 +121,7 @@ const ChatBox: React.FC = () => {
         }
 
         if (value) {
-          console.log(value);
           const line = value.split("\n").slice(0, -1);
-          console.log(line);
           line.forEach((l) => {
             if (l.startsWith("data:")) {
               const message = l.match(/data: (.*)/)?.[1];
@@ -95,19 +130,11 @@ const ChatBox: React.FC = () => {
                   ...messages,
                   { role: "assistant", content: incomingMessage },
                 ]);
-                setLatestMessage(incomingMessage);
+                setLatestMessage("");
                 return;
               }
               incomingMessage += message;
               setLatestMessage(incomingMessage);
-            } else {
-              if (!!l) {
-                incomingMessage += "\n" + l;
-                setLatestMessage(incomingMessage);
-              } else {
-                incomingMessage += "\n";
-                setLatestMessage(incomingMessage);
-              }
             }
           });
         }

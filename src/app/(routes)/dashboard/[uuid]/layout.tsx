@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { BiHide } from "react-icons/bi";
 import HistoryList from "../_components/HistoryList";
 import { v4 as uuidv4 } from "uuid";
@@ -12,9 +12,79 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
+export interface Conversation {
+  conversationId: string;
+  userId: number;
+  title: string;
+  createdAt: string;
+}
+
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const router = useRouter();
+
+  // useEffect(() => {
+  //   const fetchConversations = async () => {
+  //     const accessToken = localStorage.getItem("access_token");
+  //     try {
+  //       const response = await fetch(
+  //         "https://1838-2405-9800-b861-c89-e0-edf7-56e4-44df.ngrok-free.app/conversations",
+  //         {
+  //           method: "GET",
+  //           headers: {
+  //             Authorization: `Bearer ${accessToken}`,
+  //             "Content-Type": "application/json",
+  //           },
+  //         }
+  //       );
+  //       if (!response.ok) {
+  //         throw new Error("Failed to fetch conversations");
+  //       }
+  //       const data: Conversation[] = await response.json();
+  //       setConversations(data);
+  //     } catch (error) {
+  //       console.error("Error fetching conversations:", error);
+  //     }
+  //   };
+  //   fetchConversations();
+  // }, []);
+
+  useEffect(() => {
+    const fetchConversations = async () => {
+      const accessToken = localStorage.getItem("access_token");
+      try {
+        const response = await fetch("http://127.0.0.1:8000/conversations", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        const contentType = response.headers.get("content-type");
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(
+            `Failed to fetch: ${response.status}, Response: ${errorText}`
+          );
+        }
+
+        if (contentType && contentType.includes("application/json")) {
+          const data: Conversation[] = await response.json();
+          setConversations(data);
+        } else {
+          const text = await response.text();
+          console.error("Non-JSON response:", text);
+          throw new Error("Received non-JSON response from server");
+        }
+      } catch (error) {
+        console.error("Error fetching conversations:", error);
+      }
+    };
+
+    fetchConversations();
+  }, []);
 
   const handleClick = () => {
     router.push(`/dashboard/${uuidv4()}`);
@@ -50,7 +120,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
         <Button onClick={handleClick}>New chat</Button>
         {/* Sidebar History*/}
-        <HistoryList />
+        <HistoryList conversations={conversations} />
       </div>
 
       {/* Main content */}
