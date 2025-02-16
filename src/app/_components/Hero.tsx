@@ -2,8 +2,10 @@ import React from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { v4 as uuidv4 } from "uuid";
 
 const Hero = () => {
+  const conversationId = uuidv4();
   return (
     <div className="flex flex-col justify-center items-center h-screen">
       <div className="text-center max-w-3xl">
@@ -15,7 +17,7 @@ const Hero = () => {
           Open-Source Language Technologies for Thai Language Knowledge, and
           Culture
         </h2>
-        <Link href="/dashboard">
+        <Link href={`/dashboard/${conversationId}`}>
           <Button className="mt-5 px-10 py-6 font-bold rounded-full">
             Enter Playground
           </Button>

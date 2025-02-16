@@ -20,6 +20,7 @@ type AssistantMessage = {
   content: string;
   messageId: string;
   tokenCount: number;
+  speed?: number;
 };
 
 type Message = UserMessage | AssistantMessage;
@@ -51,7 +52,7 @@ const ChatBox: React.FC = () => {
 
       try {
         const response = await fetch(
-          `https://9742-2405-9800-b861-c89-e0-edf7-56e4-44df.ngrok-free.app/conversations/${conversationId}`,
+          `http://127.0.0.1:8000/conversations/${conversationId}`,
           {
             headers: {
               Authorization: `Bearer ${access_token}`,
@@ -91,27 +92,24 @@ const ChatBox: React.FC = () => {
     const systemMessage: Message = { role: "system", content: systemPrompt };
 
     try {
-      const response = await fetch(
-        "https://9742-2405-9800-b861-c89-e0-edf7-56e4-44df.ngrok-free.app/completions",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            model,
-            messages: [systemMessage, ...message],
-            maxTokens: 512,
-            temperature,
-            topP,
-            topK,
-            repetitionPenalty,
-            minP,
-            conversationId,
-          }),
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${access_token}`,
-          },
-        }
-      );
+      const response = await fetch("http://127.0.0.1:8000/completions", {
+        method: "POST",
+        body: JSON.stringify({
+          model,
+          messages: [systemMessage, ...message],
+          maxTokens: 512,
+          temperature,
+          topP,
+          topK,
+          repetitionPenalty,
+          minP,
+          conversationId,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${access_token}`,
+        },
+      });
 
       if (!response.body) return;
 
@@ -124,6 +122,7 @@ const ChatBox: React.FC = () => {
         content: "",
         messageId: "",
         tokenCount: 0,
+        speed: 0,
       };
       while (true) {
         const { value, done } = await reader.read();
@@ -139,6 +138,7 @@ const ChatBox: React.FC = () => {
             content: "",
             messageId: "",
             tokenCount: 0,
+            speed: 0,
           };
           break;
         }
@@ -159,6 +159,9 @@ const ChatBox: React.FC = () => {
               const tokenCount = l.match(/token: (.*)/)?.[1];
               if (!tokenCount) return;
               incomingMessage.tokenCount = Number(tokenCount);
+            } else if (l.startsWith("speed: ")) {
+              const speed = l.match(/speed: (.*)/)?.[1];
+              if (speed) incomingMessage.speed = parseFloat(speed);
             } else {
               if (!!l) {
                 incomingMessage.content += "\n" + l;
@@ -204,29 +207,47 @@ const ChatBox: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-row h-full py-4 px-4 rounded-3xl gap-4 bg-gray-300">
+    <div className="flex flex-col md:flex-row py-6 px-4 md:px-6 rounded-3xl gap-4 bg-zinc-800 overflow-hidden h-full">
       {/* Chat display */}
       <div className="flex flex-col flex-1 overflow-hidden gap-3 justify-between">
-        <div className="w-full h-full bg-white p-2 rounded-md overflow-y-auto text-black">
+        <div className="w-full flex-1 bg-[#1A1B1F] p-2 rounded-2xl overflow-y-auto text-white">
           {messages.map((msg, index) => (
             <div
               key={index}
-              className={`mb-2 ${
-                msg.role === "user" ? "text-blue-700" : "text-green-700"
+              className={`mb-2 flex ${
+                msg.role === "user" ? "justify-end" : "justify-start"
               }`}
             >
-              <strong>{msg.role}:</strong> <Markdown content={msg.content} />
-              {index === messages.length - 1 && msg.role === "assistant" && (
-                <ResponseAction
-                  messageId={msg.messageId}
-                  onRegenrate={onRegenerate}
-                />
-              )}
+              <div
+                className={`p-2 mx-2 rounded-lg max-w-[70%] ${
+                  msg.role === "user"
+                    ? "bg-blue-100 text-right text-blue-700"
+                    : "bg-green-100 text-white"
+                }`}
+              >
+                <Markdown content={msg.content} />
+                {msg.role === "assistant" && (
+                  <div className="text-sm text-gray-400 mt-1">
+                    <span>
+                      🧠 Tokens: {msg.tokenCount} | 🚀 Speed: {msg.speed}{" "}
+                      tokens/sec
+                    </span>
+                  </div>
+                )}
+                {index === messages.length - 1 && msg.role === "assistant" && (
+                  <ResponseAction
+                    messageId={msg.messageId}
+                    onRegenrate={onRegenerate}
+                  />
+                )}
+              </div>
             </div>
           ))}
           {latestMessage && (
-            <div className="text-gray-500">
-              <strong>assistant:</strong> <Markdown content={latestMessage} />
+            <div className="text-gray-500 flex justify-start">
+              <div className="p-2 rounded-lg max-w-[70%] bg-gray-100">
+                <Markdown content={latestMessage} />
+              </div>
             </div>
           )}
         </div>
@@ -235,7 +256,7 @@ const ChatBox: React.FC = () => {
         <div className="flex items-center gap-4">
           <input
             type="text"
-            className="flex-1 p-2 text-black rounded-md"
+            className="flex-1 p-2 text-black rounded-3xl"
             placeholder="Type a message"
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -243,7 +264,7 @@ const ChatBox: React.FC = () => {
           />
           <Button
             onClick={onGenerate}
-            className="px-4 py-5 text-black font-bold rounded-full bg-transparent hover:bg-transparent hover:text-violet-700 hover:border-violet-700 border-2 border-black"
+            className="px-4 py-5 text-white font-bold rounded-full border-white bg-transparent hover:bg-transparent hover:text-violet-400 hover:border-violet-400 border-2"
           >
             Send
           </Button>
@@ -251,10 +272,10 @@ const ChatBox: React.FC = () => {
       </div>
 
       {/* Settings panel */}
-      <div className="flex flex-col px-4">
+      <div className="hidden lg:flex flex-col px-4 ">
         {/* Model selection */}
         <div className="mb-4">
-          <label className="block mb-2">Model</label>
+          <label className="block mb-2 text-gray-300">Model</label>
           <select
             className="p-2 text-black rounded-md w-full"
             value={model}
@@ -280,7 +301,7 @@ const ChatBox: React.FC = () => {
 
         {/* System Prompt */}
         <div className="mb-4">
-          <label className="block mb-2">System Prompt</label>
+          <label className="block mb-2 text-gray-300">System Prompt</label>
           <Textarea
             className="p-2 text-black rounded-md w-full bg-white"
             value={systemPrompt}
@@ -289,51 +310,59 @@ const ChatBox: React.FC = () => {
         </div>
 
         {/* Parameters */}
-        <div className="mb-4">
-          <label className="block mb-2">Temperature</label>
-          <Slider
-            defaultValue={[0.7]}
-            max={2}
-            step={0.01}
-            value={[temperature]}
-            onValueChange={(val) => setTemperature(val[0])}
-          />
-
-          <label className="block mb-2">Top-P</label>
-          <Slider
-            defaultValue={[0.95]}
-            max={1}
-            step={0.01}
-            value={[topP]}
-            onValueChange={(val) => setTopP(val[0])}
-          />
-
-          <label className="block mb-2">Top-K</label>
-          <Slider
-            defaultValue={[0]}
-            max={100}
-            step={1}
-            value={[topK]}
-            onValueChange={(val) => setTopK(val[0])}
-          />
-
-          <label className="block mb-2">Repetition Penalty</label>
-          <Slider
-            defaultValue={[1.05]}
-            max={2}
-            step={0.01}
-            value={[repetitionPenalty]}
-            onValueChange={(val) => setRepetitionPenalty(val[0])}
-          />
-
-          <label className="block mb-2">Min-P</label>
-          <Slider
-            defaultValue={[0]}
-            max={0.5}
-            step={0.01}
-            value={[minP]}
-            onValueChange={(val) => setMinP(val[0])}
-          />
+        <div className="mb-4 ">
+          <div className="my-3">
+            <label className="block mb-2 text-gray-300">Temperature</label>
+            <Slider
+              defaultValue={[0.7]}
+              max={2}
+              step={0.01}
+              value={[temperature]}
+              onValueChange={(val) => setTemperature(val[0])}
+            />
+          </div>
+          <div className="my-3">
+            <label className="block mb-2 text-gray-300">Top-P</label>
+            <Slider
+              defaultValue={[0.95]}
+              max={1}
+              step={0.01}
+              value={[topP]}
+              onValueChange={(val) => setTopP(val[0])}
+            />
+          </div>
+          <div className="my-3">
+            <label className="block mb-2 text-gray-300">Top-K</label>
+            <Slider
+              defaultValue={[0]}
+              max={100}
+              step={1}
+              value={[topK]}
+              onValueChange={(val) => setTopK(val[0])}
+            />
+          </div>
+          <div className="my-3">
+            <label className="block mb-2 text-gray-300">
+              Repetition Penalty
+            </label>
+            <Slider
+              defaultValue={[1.05]}
+              max={2}
+              step={0.01}
+              value={[repetitionPenalty]}
+              onValueChange={(val) => setRepetitionPenalty(val[0])}
+            />
+          </div>
+          <div className="my-3">
+            <label className="block mb-2 text-gray-300">Min-P</label>
+            <Slider
+              defaultValue={[0]}
+              max={0.5}
+              step={0.01}
+              value={[minP]}
+              onValueChange={(val) => setMinP(val[0])}
+            />
+          </div>
         </div>
       </div>
     </div>

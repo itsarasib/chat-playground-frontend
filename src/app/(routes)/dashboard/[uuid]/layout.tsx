@@ -45,8 +45,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     );
   }
 
+  // if (isError) {
+  //   return <div>Error fetching conversations</div>;
+  // }
+
   if (isError) {
-    return <div>Error fetching conversations</div>;
+    console.log("Error fetching conversations");
   }
 
   const handleClick = () => {
@@ -61,7 +65,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     <div className="flex min-h-screen">
       {/* Sidebar */}
       <div
-        className={`bg-gray-900 text-white transition-all duration-300 ${
+        className={`bg-[#1A1B1F] text-white transition-all duration-300 ${
           isSidebarVisible ? "w-64" : "w-0"
         } overflow-hidden`}
         style={{ maxWidth: "260px" }}
@@ -73,7 +77,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           </div>
           {isSidebarVisible && (
             <Button
-              className="m-4 bg-transparent border-2 text-white px-2 py-3 rounded-full hover:bg-gray-400"
+              className="m-4 bg-transparent text-white px-2 py-3 rounded-full hover:text-violet-400 hover:border-violet-400 border-2"
               onClick={toggleSidebar}
             >
               <BiHide />
@@ -81,16 +85,21 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           )}
         </div>
 
-        <Button onClick={handleClick}>New chat</Button>
+        <Button
+          onClick={handleClick}
+          className="flex flex-row mx-auto py-5 px-14 text-white font-bold rounded-full border-white bg-transparent hover:bg-transparent hover:text-violet-400 hover:border-violet-400 border-2"
+        >
+          New chat
+        </Button>
         {/* Sidebar History*/}
         <HistoryList conversations={conversations} />
       </div>
 
       {/* Main content */}
-      <div className="flex-1 relative">
+      <div className="flex-1 relative bg-[#121215]">
         {!isSidebarVisible && (
           <Button
-            className="absolute top-4 left-4 z-10 border-2 border-black bg-transparent text-black px-2 py-3 rounded-full hover:bg-gray-400"
+            className="absolute top-4 left-4 z-10 border-white bg-transparent text-white px-2 py-3 rounded-full hover:text-violet-400 hover:border-violet-400 border-2"
             onClick={toggleSidebar}
           >
             <BiHide />

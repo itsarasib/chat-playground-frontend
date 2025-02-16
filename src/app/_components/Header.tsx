@@ -2,8 +2,10 @@ import { Button } from "@/components/ui/button";
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-
+import { v4 as uuidv4 } from "uuid";
 const Header = () => {
+  const conversationId = uuidv4();
+
   return (
     <div>
       <div className="flex items-center justify-between p-5 shadow-md">
@@ -26,7 +28,7 @@ const Header = () => {
           </li>
         </ul>
         <div className="flex gap-5">
-          <Link href="/dashboard">
+          <Link href={`/dashboard/${conversationId}`}>
             <Button>Get Started</Button>
           </Link>
         </div>
