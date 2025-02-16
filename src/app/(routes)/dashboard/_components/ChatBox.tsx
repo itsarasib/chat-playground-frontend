@@ -10,10 +10,19 @@ import { useToast } from "@/hooks/use-toast";
 import { useToken } from "@/hooks/useToken";
 import { ResponseAction } from "@/components/ReponseAction";
 
-type Message = {
-  role: "user" | "assistant" | "system";
+type UserMessage = {
+  role: "user" | "system";
   content: string;
 };
+
+type AssistantMessage = {
+  role: "assistant";
+  content: string;
+  id: string;
+  tokenCount: number;
+};
+
+type Message = UserMessage | AssistantMessage;
 
 const ChatBox: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -34,7 +43,6 @@ const ChatBox: React.FC = () => {
   const {
     token: { access_token },
   } = useToken();
-  console.log(access_token);
 
   // Fetch messages when conversationId changes
   useEffect(() => {
@@ -111,37 +119,53 @@ const ChatBox: React.FC = () => {
         .pipeThrough(new TextDecoderStream())
         .getReader();
 
-      let incomingMessage = "";
+      let incomingMessage = {
+        role: "assistant" as const,
+        content: "",
+        id: "",
+        tokenCount: 0,
+      };
       while (true) {
         const { value, done } = await reader.read();
         if (done) {
+          console.log("done", incomingMessage);
+          setMessages((messages) => [
+            ...messages,
+            incomingMessage, // Add tokenCount
+          ]);
           setLatestMessage("");
-          incomingMessage = "";
+          incomingMessage = {
+            role: "assistant",
+            content: "",
+            id: "",
+            tokenCount: 0,
+          };
           break;
         }
 
         if (value) {
           const line = value.split("\n").slice(0, -1);
           line.forEach((l) => {
-            if (l.startsWith("data:")) {
+            if (l.startsWith("id: ")) {
+              const id = l.match(/id: (.*)/)?.[1];
+              if (!id) return;
+              incomingMessage.id = id;
+              // setLatestMessage((prev) => ({ ...prev, id }));
+            } else if (l.startsWith("data:")) {
               const message = l.match(/data: (.*)/)?.[1];
-              if (message === "DONE") {
-                setMessages((messages) => [
-                  ...messages,
-                  { role: "assistant", content: incomingMessage },
-                ]);
-                setLatestMessage("");
-                return;
-              }
-              incomingMessage += message;
-              setLatestMessage(incomingMessage);
+              incomingMessage.content += message;
+              setLatestMessage(incomingMessage.content);
+            } else if (l.startsWith("token: ")) {
+              const tokenCount = l.match(/token: (.*)/)?.[1];
+              if (!tokenCount) return;
+              incomingMessage.tokenCount = Number(tokenCount);
             } else {
               if (!!l) {
-                incomingMessage += "\n" + l;
-                setLatestMessage(incomingMessage);
+                incomingMessage.content += "\n" + l;
+                setLatestMessage(incomingMessage.content);
               } else {
-                incomingMessage += "\n";
-                setLatestMessage(incomingMessage);
+                incomingMessage.content += "\n";
+                setLatestMessage(incomingMessage.content);
               }
             }
           });

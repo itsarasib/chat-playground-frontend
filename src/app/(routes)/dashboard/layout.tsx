@@ -10,7 +10,6 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }>) {
   const { user, isLoading, error } = useToken();
-  console.log(user);
 
   const unauthorizedPage = (
     <div className="flex justify-center flex-col items-center h-screen">
